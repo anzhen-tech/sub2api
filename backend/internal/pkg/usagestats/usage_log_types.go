@@ -111,6 +111,29 @@ type APIKeyUsageTrendPoint struct {
 	Tokens   int64  `json:"tokens"`
 }
 
+// APIKeyModelDistributionItem represents model usage for a single API Key.
+type APIKeyModelDistributionItem struct {
+	APIKeyID   int64       `json:"api_key_id"`
+	APIKeyName string      `json:"api_key_name"`
+	Models     []ModelStat `json:"models"`
+}
+
+// APIKeyTrendDataPoint represents a single trend data point for an API Key.
+type APIKeyTrendDataPoint struct {
+	Date        string  `json:"date"`
+	Requests    int64   `json:"requests"`
+	TotalTokens int64   `json:"total_tokens"`
+	Cost        float64 `json:"cost"`
+	ActualCost  float64 `json:"actual_cost"`
+}
+
+// APIKeyTrendItem represents trend data for a single API Key.
+type APIKeyTrendItem struct {
+	APIKeyID   int64                  `json:"api_key_id"`
+	APIKeyName string                 `json:"api_key_name"`
+	Data       []APIKeyTrendDataPoint `json:"data"`
+}
+
 // UserDashboardStats 用户仪表盘统计
 type UserDashboardStats struct {
 	// API Key 统计

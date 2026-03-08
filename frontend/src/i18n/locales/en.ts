@@ -735,7 +735,29 @@ export default {
     exportExcelSuccess: 'Usage data exported successfully (Excel format)',
     exportExcelFailed: 'Failed to export usage data',
     imageUnit: ' images',
-    userAgent: 'User-Agent'
+    userAgent: 'User-Agent',
+    // Charts section
+    charts: {
+      title: 'Usage Statistics Charts',
+      expand: 'Expand Charts',
+      collapse: 'Collapse Charts',
+      requestsTrend: 'Requests Trend',
+      tokenUsageTrend: 'Token Usage Trend',
+      costTrend: 'Cost Trend',
+      apiKeyModelDistribution: 'Model Usage Distribution',
+      noData: 'No data available',
+      totalRequests: 'Total',
+      requests: 'Requests',
+      cost: 'Cost',
+      granularity: 'Granularity',
+      granularityHour: 'Hour',
+      granularityDay: 'Day',
+      granularityMonth: 'Month'
+    },
+    // Records section
+    records: {
+      title: 'Usage Records'
+    }
   },
 
   // Redeem

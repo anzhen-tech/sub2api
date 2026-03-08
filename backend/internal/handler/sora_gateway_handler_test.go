@@ -388,6 +388,12 @@ func (s *stubUsageLogRepo) GetModelStatsAggregated(ctx context.Context, modelNam
 func (s *stubUsageLogRepo) GetDailyStatsAggregated(ctx context.Context, userID int64, startTime, endTime time.Time) ([]map[string]any, error) {
 	return nil, nil
 }
+func (s *stubUsageLogRepo) GetAPIKeyModelDistribution(ctx context.Context, userID int64, startTime, endTime time.Time) ([]usagestats.APIKeyModelDistributionItem, error) {
+	return nil, nil
+}
+func (s *stubUsageLogRepo) GetUserAPIKeyTrend(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string) ([]usagestats.APIKeyTrendItem, error) {
+	return nil, nil
+}
 
 func TestSoraGatewayHandler_ChatCompletions(t *testing.T) {
 	gin.SetMode(gin.TestMode)

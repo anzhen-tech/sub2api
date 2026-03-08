@@ -1433,6 +1433,131 @@ func (r *usageLogRepository) GetUserModelStats(ctx context.Context, userID int64
 	return results, nil
 }
 
+// GetAPIKeyModelDistribution returns model usage distribution grouped by API Key for a user.
+func (r *usageLogRepository) GetAPIKeyModelDistribution(ctx context.Context, userID int64, startTime, endTime time.Time) ([]usagestats.APIKeyModelDistributionItem, error) {
+	query := `
+		SELECT ul.api_key_id, COALESCE(ak.name, '') as api_key_name, ul.model,
+			COUNT(*) as requests,
+			COALESCE(SUM(ul.input_tokens), 0) as input_tokens,
+			COALESCE(SUM(ul.output_tokens), 0) as output_tokens,
+			COALESCE(SUM(ul.cache_creation_tokens), 0) as cache_creation_tokens,
+			COALESCE(SUM(ul.cache_read_tokens), 0) as cache_read_tokens,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) as cost,
+			COALESCE(SUM(ul.actual_cost), 0) as actual_cost
+		FROM usage_logs ul
+		LEFT JOIN api_keys ak ON ul.api_key_id = ak.id
+		WHERE ul.user_id = $1 AND ul.created_at >= $2 AND ul.created_at < $3
+		GROUP BY ul.api_key_id, ak.name, ul.model
+		ORDER BY ul.api_key_id, requests DESC
+	`
+
+	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	// Scan flat rows and group by api_key_id
+	itemMap := make(map[int64]*usagestats.APIKeyModelDistributionItem)
+	var orderedKeys []int64
+
+	for rows.Next() {
+		var apiKeyID int64
+		var apiKeyName string
+		var stat ModelStat
+		if err := rows.Scan(
+			&apiKeyID, &apiKeyName, &stat.Model,
+			&stat.Requests, &stat.InputTokens, &stat.OutputTokens,
+			&stat.CacheCreationTokens, &stat.CacheReadTokens, &stat.TotalTokens,
+			&stat.Cost, &stat.ActualCost,
+		); err != nil {
+			return nil, err
+		}
+		item, ok := itemMap[apiKeyID]
+		if !ok {
+			item = &usagestats.APIKeyModelDistributionItem{
+				APIKeyID:   apiKeyID,
+				APIKeyName: apiKeyName,
+				Models:     make([]ModelStat, 0),
+			}
+			itemMap[apiKeyID] = item
+			orderedKeys = append(orderedKeys, apiKeyID)
+		}
+		item.Models = append(item.Models, stat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	results := make([]usagestats.APIKeyModelDistributionItem, 0, len(orderedKeys))
+	for _, key := range orderedKeys {
+		results = append(results, *itemMap[key])
+	}
+	return results, nil
+}
+
+// GetUserAPIKeyTrend returns per-API-Key trend data for a user.
+func (r *usageLogRepository) GetUserAPIKeyTrend(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string) ([]usagestats.APIKeyTrendItem, error) {
+	dateFormat := safeDateFormat(granularity)
+
+	query := fmt.Sprintf(`
+		SELECT TO_CHAR(ul.created_at, '%s') as date,
+			ul.api_key_id, COALESCE(ak.name, '') as api_key_name,
+			COUNT(*) as requests,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) as cost,
+			COALESCE(SUM(ul.actual_cost), 0) as actual_cost
+		FROM usage_logs ul
+		LEFT JOIN api_keys ak ON ul.api_key_id = ak.id
+		WHERE ul.user_id = $1 AND ul.created_at >= $2 AND ul.created_at < $3
+		GROUP BY date, ul.api_key_id, ak.name
+		ORDER BY ul.api_key_id, date
+	`, dateFormat)
+
+	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	itemMap := make(map[int64]*usagestats.APIKeyTrendItem)
+	var orderedKeys []int64
+
+	for rows.Next() {
+		var date string
+		var apiKeyID int64
+		var apiKeyName string
+		var point usagestats.APIKeyTrendDataPoint
+
+		if err := rows.Scan(&date, &apiKeyID, &apiKeyName, &point.Requests, &point.TotalTokens, &point.Cost, &point.ActualCost); err != nil {
+			return nil, err
+		}
+		point.Date = date
+
+		item, ok := itemMap[apiKeyID]
+		if !ok {
+			item = &usagestats.APIKeyTrendItem{
+				APIKeyID:   apiKeyID,
+				APIKeyName: apiKeyName,
+				Data:       make([]usagestats.APIKeyTrendDataPoint, 0),
+			}
+			itemMap[apiKeyID] = item
+			orderedKeys = append(orderedKeys, apiKeyID)
+		}
+		item.Data = append(item.Data, point)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	results := make([]usagestats.APIKeyTrendItem, 0, len(orderedKeys))
+	for _, key := range orderedKeys {
+		results = append(results, *itemMap[key])
+	}
+	return results, nil
+}
+
 // UsageLogFilters represents filters for usage log queries
 type UsageLogFilters = usagestats.UsageLogFilters
 

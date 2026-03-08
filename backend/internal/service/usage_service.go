@@ -315,6 +315,15 @@ func (s *UsageService) GetUserModelStats(ctx context.Context, userID int64, star
 	return stats, nil
 }
 
+// GetUserAPIKeyModelDistribution returns model distribution grouped by API Key for a user.
+func (s *UsageService) GetUserAPIKeyModelDistribution(ctx context.Context, userID int64, startTime, endTime time.Time) ([]usagestats.APIKeyModelDistributionItem, error) {
+	distribution, err := s.usageRepo.GetAPIKeyModelDistribution(ctx, userID, startTime, endTime)
+	if err != nil {
+		return nil, fmt.Errorf("get api key model distribution: %w", err)
+	}
+	return distribution, nil
+}
+
 // GetAPIKeyModelStats returns per-model usage stats for a specific API Key.
 func (s *UsageService) GetAPIKeyModelStats(ctx context.Context, apiKeyID int64, startTime, endTime time.Time) ([]usagestats.ModelStat, error) {
 	stats, err := s.usageRepo.GetModelStatsWithFilters(ctx, startTime, endTime, 0, apiKeyID, 0, 0, nil, nil, nil)
@@ -331,6 +340,15 @@ func (s *UsageService) GetBatchAPIKeyUsageStats(ctx context.Context, apiKeyIDs [
 		return nil, fmt.Errorf("get batch api key usage stats: %w", err)
 	}
 	return stats, nil
+}
+
+// GetUserAPIKeyTrend returns per-API-Key trend data for a user.
+func (s *UsageService) GetUserAPIKeyTrend(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string) ([]usagestats.APIKeyTrendItem, error) {
+	items, err := s.usageRepo.GetUserAPIKeyTrend(ctx, userID, startTime, endTime, granularity)
+	if err != nil {
+		return nil, fmt.Errorf("get user api key trend: %w", err)
+	}
+	return items, nil
 }
 
 // ListWithFilters lists usage logs with admin filters.

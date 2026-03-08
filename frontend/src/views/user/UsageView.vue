@@ -148,6 +148,16 @@
         </div>
       </template>
 
+      <template #charts>
+        <UsageChartsPanel
+          :api-key-trends="chartTrendData"
+          :model-distribution="chartModelDistribution"
+          :loading="chartsLoading"
+          :granularity="chartGranularity"
+          @update:granularity="onGranularityChange"
+        />
+      </template>
+
       <template #table>
         <DataTable :columns="columns" :data="usageLogs" :loading="loading">
           <template #cell-api_key="{ row }">
@@ -475,7 +485,9 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import Select from '@/components/common/Select.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Icon from '@/components/icons/Icon.vue'
+import UsageChartsPanel from '@/components/user/usage/UsageChartsPanel.vue'
 import type { UsageLog, ApiKey, UsageQueryParams, UsageStatsResponse } from '@/types'
+import type { APIKeyTrendItem, APIKeyModelDistributionItem } from '@/api/usage'
 import type { Column } from '@/components/common/types'
 import { formatDateTime, formatReasoningEffort } from '@/utils/format'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
@@ -497,6 +509,17 @@ const tokenTooltipData = ref<UsageLog | null>(null)
 
 // Usage stats from API
 const usageStats = ref<UsageStatsResponse | null>(null)
+
+// Charts data
+const chartTrendData = ref<APIKeyTrendItem[]>([])
+const chartModelDistribution = ref<APIKeyModelDistributionItem[]>([])
+const chartsLoading = ref(false)
+const chartGranularity = ref('day')
+
+const onGranularityChange = (value: string) => {
+  chartGranularity.value = value
+  loadChartsData()
+}
 
 const columns = computed<Column[]>(() => [
   { key: 'api_key', label: t('usage.apiKeyFilter'), sortable: false },
@@ -683,10 +706,38 @@ const loadUsageStats = async () => {
   }
 }
 
+const loadChartsData = async () => {
+  chartsLoading.value = true
+  try {
+    const startDateParam = filters.value.start_date || startDate.value
+    const endDateParam = filters.value.end_date || endDate.value
+
+    const [trendRes, distributionRes] = await Promise.all([
+      usageAPI.getDashboardApiKeyTrend({
+        start_date: startDateParam,
+        end_date: endDateParam,
+        granularity: chartGranularity.value as 'hour' | 'day' | 'month'
+      }),
+      usageAPI.getDashboardApiKeyModelDistribution({
+        start_date: startDateParam,
+        end_date: endDateParam
+      })
+    ])
+
+    chartTrendData.value = trendRes.trends
+    chartModelDistribution.value = distributionRes.distribution
+  } catch (error) {
+    console.error('Failed to load charts data:', error)
+  } finally {
+    chartsLoading.value = false
+  }
+}
+
 const applyFilters = () => {
   pagination.page = 1
   loadUsageLogs()
   loadUsageStats()
+  loadChartsData()
 }
 
 const resetFilters = () => {
@@ -706,6 +757,7 @@ const resetFilters = () => {
   pagination.page = 1
   loadUsageLogs()
   loadUsageStats()
+  loadChartsData()
 }
 
 const handlePageChange = (page: number) => {
@@ -864,5 +916,6 @@ onMounted(() => {
   loadApiKeys()
   loadUsageLogs()
   loadUsageStats()
+  loadChartsData()
 })
 </script>

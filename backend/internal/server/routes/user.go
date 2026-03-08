@@ -62,6 +62,8 @@ func RegisterUserRoutes(
 			usage.GET("/dashboard/stats", h.Usage.DashboardStats)
 			usage.GET("/dashboard/trend", h.Usage.DashboardTrend)
 			usage.GET("/dashboard/models", h.Usage.DashboardModels)
+			usage.GET("/dashboard/api-key-model-distribution", h.Usage.DashboardAPIKeyModelDistribution)
+			usage.GET("/dashboard/api-key-trend", h.Usage.DashboardAPIKeyTrend)
 			usage.POST("/dashboard/api-keys-usage", h.Usage.DashboardAPIKeysUsage)
 		}
 

@@ -42,7 +42,7 @@ export interface UserDashboardStats {
 export interface TrendParams {
   start_date?: string
   end_date?: string
-  granularity?: 'day' | 'hour'
+  granularity?: 'hour' | 'day' | 'month'
 }
 
 export interface TrendResponse {
@@ -257,6 +257,87 @@ export async function getDashboardApiKeysUsage(
   return data
 }
 
+// ==================== API Key Model Distribution Types ====================
+
+export interface APIKeyModelDistributionModel {
+  model: string
+  requests: number
+  input_tokens: number
+  output_tokens: number
+  cache_creation_tokens: number
+  cache_read_tokens: number
+  total_tokens: number
+  cost: number
+  actual_cost: number
+}
+
+export interface APIKeyModelDistributionItem {
+  api_key_id: number
+  api_key_name: string
+  models: APIKeyModelDistributionModel[]
+}
+
+export interface APIKeyModelDistributionResponse {
+  distribution: APIKeyModelDistributionItem[]
+}
+
+/**
+ * Get API key model distribution data
+ * @param params - Query parameters for filtering
+ * @returns API key model distribution for current user
+ */
+export async function getDashboardApiKeyModelDistribution(params?: {
+  start_date?: string
+  end_date?: string
+  timezone?: string
+}): Promise<APIKeyModelDistributionResponse> {
+  const { data } = await apiClient.get<APIKeyModelDistributionResponse>(
+    '/usage/dashboard/api-key-model-distribution',
+    { params }
+  )
+  return data
+}
+
+// ==================== API Key Trend Types ====================
+
+export interface APIKeyTrendDataPoint {
+  date: string
+  requests: number
+  total_tokens: number
+  cost: number
+  actual_cost: number
+}
+
+export interface APIKeyTrendItem {
+  api_key_id: number
+  api_key_name: string
+  data: APIKeyTrendDataPoint[]
+}
+
+export interface APIKeyTrendResponse {
+  trends: APIKeyTrendItem[]
+  start_date: string
+  end_date: string
+  granularity: string
+}
+
+/**
+ * Get per-API-Key trend data
+ * @param params - Query parameters for filtering
+ * @returns Per-API-Key trend data for current user
+ */
+export async function getDashboardApiKeyTrend(params?: {
+  start_date?: string
+  end_date?: string
+  granularity?: 'hour' | 'day' | 'month'
+}): Promise<APIKeyTrendResponse> {
+  const { data } = await apiClient.get<APIKeyTrendResponse>(
+    '/usage/dashboard/api-key-trend',
+    { params }
+  )
+  return data
+}
+
 export const usageAPI = {
   list,
   query,
@@ -268,7 +349,9 @@ export const usageAPI = {
   getDashboardStats,
   getDashboardTrend,
   getDashboardModels,
-  getDashboardApiKeysUsage
+  getDashboardApiKeysUsage,
+  getDashboardApiKeyModelDistribution,
+  getDashboardApiKeyTrend
 }
 
 export default usageAPI

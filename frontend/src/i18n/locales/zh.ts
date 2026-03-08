@@ -740,7 +740,29 @@ export default {
     exportExcelSuccess: '使用数据导出成功（Excel格式）',
     exportExcelFailed: '使用数据导出失败',
     imageUnit: '张',
-    userAgent: 'User-Agent'
+    userAgent: 'User-Agent',
+    // Charts section
+    charts: {
+      title: '使用统计',
+      expand: '展开图表',
+      collapse: '收起图表',
+      requestsTrend: '请求次数趋势',
+      tokenUsageTrend: 'Token 使用趋势',
+      costTrend: '费用趋势',
+      apiKeyModelDistribution: '模型使用分布',
+      noData: '暂无数据',
+      totalRequests: '总请求',
+      requests: '请求',
+      cost: '费用',
+      granularity: '粒度',
+      granularityHour: '小时',
+      granularityDay: '日',
+      granularityMonth: '月'
+    },
+    // Records section
+    records: {
+      title: '使用记录'
+    }
   },
 
   // Redeem

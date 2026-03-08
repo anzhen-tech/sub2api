@@ -361,6 +361,54 @@ func (h *UsageHandler) DashboardModels(c *gin.Context) {
 	})
 }
 
+// DashboardAPIKeyModelDistribution handles getting model distribution per API Key
+// GET /api/v1/usage/dashboard/api-key-model-distribution
+func (h *UsageHandler) DashboardAPIKeyModelDistribution(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	startTime, endTime := parseUserTimeRange(c)
+
+	distribution, err := h.usageService.GetUserAPIKeyModelDistribution(c.Request.Context(), subject.UserID, startTime, endTime)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"distribution": distribution,
+	})
+}
+
+// DashboardAPIKeyTrend handles getting per-API-Key trend data
+// GET /api/v1/usage/dashboard/api-key-trend
+func (h *UsageHandler) DashboardAPIKeyTrend(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	startTime, endTime := parseUserTimeRange(c)
+	granularity := c.DefaultQuery("granularity", "day")
+
+	trends, err := h.usageService.GetUserAPIKeyTrend(c.Request.Context(), subject.UserID, startTime, endTime, granularity)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"trends":      trends,
+		"start_date":  startTime.Format("2006-01-02"),
+		"end_date":    endTime.Add(-24 * time.Hour).Format("2006-01-02"),
+		"granularity": granularity,
+	})
+}
+
 // BatchAPIKeysUsageRequest represents the request for batch API keys usage
 type BatchAPIKeysUsageRequest struct {
 	APIKeyIDs []int64 `json:"api_key_ids" binding:"required"`
