@@ -1769,6 +1769,10 @@ func (r *stubUsageLogRepo) GetStatsWithFilters(ctx context.Context, filters usag
 	return nil, errors.New("not implemented")
 }
 
+func (r *stubUsageLogRepo) GetAPIKeyModelDistribution(ctx context.Context, userID int64, startTime, endTime time.Time) ([]usagestats.APIKeyModelDistributionItem, error) {
+	return nil, errors.New("not implemented")
+}
+
 type stubSettingRepo struct {
 	all map[string]string
 }
