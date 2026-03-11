@@ -230,6 +230,32 @@ func (s *APIKeyRepoSuite) TestExistsByKey() {
 	s.Require().False(notExists)
 }
 
+func (s *APIKeyRepoSuite) TestCreateAfterDelete_SameKey() {
+	// 回归测试：key 软删除后应允许重新创建相同 key（部分唯一索引）
+	user := s.mustCreateUser("recreate@test.com")
+	key := s.mustCreateApiKey(user.ID, "sk-recreate", "Original", nil)
+
+	// 软删除
+	err := s.repo.Delete(s.ctx, key.ID)
+	s.Require().NoError(err)
+
+	// 删除后 ExistsByKey 应返回 false
+	exists, err := s.repo.ExistsByKey(s.ctx, "sk-recreate")
+	s.Require().NoError(err)
+	s.Require().False(exists, "deleted key should not be reported as existing")
+
+	// 重新创建同一 key，不应报 409 冲突
+	newKey := &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-recreate",
+		Name:   "Recreated",
+		Status: service.StatusActive,
+	}
+	err = s.repo.Create(s.ctx, newKey)
+	s.Require().NoError(err, "should be able to recreate a previously deleted key")
+	s.Require().Greater(newKey.ID, key.ID, "new record should have a different ID")
+}
+
 // --- SearchAPIKeys ---
 
 func (s *APIKeyRepoSuite) TestSearchAPIKeys() {
